@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studieplanlegger</title>
+<style>
+:root{--bg:#f3f5f1;--card:#fff;--ink:#1d2a26;--mute:#66746f;--line:#dde3de;--acc:#1f6f5c;--accfg:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a18;--card:#1c2421;--ink:#e8efeb;--mute:#93a39c;--line:#2c3733;--acc:#4fc3a5;--accfg:#0d1d18;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141a18;--card:#1c2421;--ink:#e8efeb;--mute:#93a39c;--line:#2c3733;--acc:#4fc3a5;--accfg:#0d1d18;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Source Sans 3","Segoe UI",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:20px 16px 48px}
+h1{font:700 28px/1.2 Georgia,"Times New Roman",serif;margin:0 0 4px}
+h2{font:700 19px/1.3 Georgia,serif;margin:0 0 12px}
+.sub{color:var(--mute);margin:0 0 20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+input[type=number]{width:80px}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+button{cursor:pointer}
+button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
+button.g{border:0;background:none;color:var(--mute);padding:4px 8px}
+.topic{border-top:1px solid var(--line);padding:14px 0}
+.topic:first-of-type{border-top:0}
+.th{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.th b{font-size:18px}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;border-radius:5px}
+.meta{color:var(--mute);font-size:14px}
+.ch{display:flex;align-items:center;gap:8px;padding:5px 0}
+.ch label{flex:1;display:flex;gap:8px;align-items:center;cursor:pointer}
+.chb{padding:8px 0;border-top:1px dashed var(--line)}
+.chb .cn{flex:1;font-weight:600}
+.chb.done .cn{color:var(--mute)}
+.chb input[type=range]{flex:1;padding:0;accent-color:var(--acc);min-width:120px}
+.pc{min-width:48px;text-align:right}
+.ch input[type=number]{width:64px;padding:4px 6px}
+.chart{overflow-x:auto}
+svg text{fill:var(--mute);font:12px "Segoe UI",system-ui,sans-serif}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:14px}
+.legend span{display:flex;align-items:center;gap:6px}
+.empty{color:var(--mute);padding:8px 0}
+.day{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+.chb .ch{flex-wrap:wrap}
+.plan{color:var(--ink);font-size:14px;margin:2px 0 8px}
+</style>
+</head>
+<body>
+<main>
+<h1>Studieplanlegger</h1>
+<p class="sub">Logg tid, kryss av kapitler og gi hvert kapittel en verdi etter hvor tungt det er.</p>
+
+<section>
+<h2>Nytt tema</h2>
+<div class="row">
+<input id="tn" placeholder="F.eks. Statistikk" aria-label="Navn på tema">
+<input id="tc" type="color" value="#1f6f5c" aria-label="Farge" style="padding:2px;width:44px;height:36px">
+<label class="meta">Sluttdato <input id="tdl" type="text" inputmode="numeric" placeholder="dd.mm.åååå" style="width:120px"></label>
+<label class="meta">Første anslag (t) <input id="tes" type="number" min="0" step="0.5" placeholder="kan justeres" title="Du kan justere anslaget senere" style="width:110px"></label>
+<button class="p" id="addT">Legg til tema</button>
+</div>
+</section>
+
+<section>
+<h2>Logg studietid</h2>
+<div class="row">
+<select id="ls" aria-label="Tema"></select>
+<select id="lc" aria-label="Kapittel"></select>
+<input id="lm" type="number" min="1" placeholder="Min" aria-label="Minutter">
+<input id="lp" type="number" min="0" max="100" step="5" placeholder="% nå" aria-label="Hvor langt du har kommet i kapittelet (prosent)">
+<input id="ld" type="text" inputmode="numeric" placeholder="dd.mm.åååå" aria-label="Dato (dd.mm.åååå)" style="width:120px">
+<button class="p" id="addL">Logg tid</button>
+</div>
+</section>
+
+<section>
+<h2>Temaer og kapitler</h2>
+<div class="row" style="margin-bottom:10px"><label for="pd" class="meta">Fremdrift gjelder for dato:</label><input id="pd" type="text" inputmode="numeric" placeholder="dd.mm.åååå" style="width:120px"><span class="meta">Velg en tidligere dato før du flytter glidebryteren eller trykker «Ferdig».</span></div>
+<div id="topics"></div>
+</section>
+
+<section>
+<h2>Plan fremover</h2>
+<p class="meta" style="margin:0 0 10px">Skriv inn hvor mange timer du kan jobbe på hver ukedag (0 = fri). Tiden som gjenstår fordeles etter dette, så dager med mer tid får mer av arbeidet.</p>
+<div class="row" id="dayrow" style="margin-bottom:12px"></div>
+<div class="chart" id="planchart"></div>
+<div class="legend" id="planleg"></div>
+</section>
+
+<section>
+<h2>Utvikling over tid</h2>
+<div class="row" style="margin-bottom:10px">
+<select id="cm" aria-label="Mål"><option value="time">Studietid (timer)</option><option value="pts">Kapittelpoeng</option></select>
+<select id="cr" aria-label="Periode"><option value="d7">Siste 7 dager</option><option value="d14" selected>Siste 14 dager</option><option value="w8">Siste 8 uker</option></select>
+<select id="cf" aria-label="Filtrer tema"></select>
+</div>
+<div class="chart" id="chart"></div>
+<div class="legend" id="legend"></div>
+</section>
+<section>
+<h2>Sikkerhetskopi</h2>
+<p class="meta" style="margin:0 0 10px">Kopier dataene dine som tekst og lagre dem i en notatfil. Lim dem inn her senere for å fortsette, også på en annen enhet.</p>
+<div class="row" style="margin-bottom:10px"><button class="p" id="exp">Kopier data</button><button id="imp">Last inn data</button><span class="meta" id="bm" role="status"></span></div>
+<textarea id="bt" rows="4" placeholder="Dataene vises her når du kopierer. Lim inn tidligere data her og trykk «Last inn data»." aria-label="Sikkerhetskopi" style="width:100%;font:13px/1.4 monospace;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea>
+</section>
+</main>
+
+<script>
+var KEY="studieplanlegger-v1";
+var S={topics:[],logs:[]};
+try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&p.topics&&p.logs)S=p;}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function mig(c){
+  if(c.prog===undefined){c.prog=c.done?100:0;c.hist=(c.done&&c.doneDate)?[{date:c.doneDate,pct:100}]:[];}
+  if(!Array.isArray(c.hist))c.hist=[];
+  if(c.hist.length&&c.hist[0].dp!==undefined){var run=0;c.hist=c.hist.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;}).map(function(x){run=Math.max(0,Math.min(100,run+x.dp));return{date:x.date,pct:run};});}
+}
+S.topics.forEach(function(t){t.chapters.forEach(mig);});
+function capFrom(o){if(o&&o.cap&&typeof o.cap==="object")return o.cap;var days=(o&&Array.isArray(o.days))?o.days:[1,2,3,4,5],c={};for(var i=0;i<7;i++)c[i]=days.indexOf(i)>-1?2:0;return c;}
+S.cap=capFrom(S);
+function chap(t,id){return t.chapters.filter(function(c){return c.id===id;})[0];}
+function pdate(){return parseD($("pd").value)||today();}
+function setProg(c,p,date){p=Math.max(0,Math.min(100,isNaN(p)?0:p));
+  c.hist=c.hist.filter(function(h){return h.date!==date;});
+  c.hist.push({date:date,pct:p});
+  c.hist.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+  c.hist.forEach(function(h){if(h.date>date&&h.pct<p)h.pct=p;});
+  c.prog=c.hist[c.hist.length-1].pct;c.done=c.prog>=100;
+  c.doneDate=null;if(c.done){for(var i=0;i<c.hist.length;i++){if(c.hist[i].pct>=100){c.doneDate=c.hist[i].date;break;}}}
+}
+function fillCh(){var t=topic($("ls").value),cur=$("lc").value;$("lc").innerHTML='<option value="">Kapittel (valgfritt)</option>'+(t?t.chapters.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+' ('+c.prog+' %)</option>';}).join(""):"");if(cur&&t&&chap(t,cur))$("lc").value=cur;}
+function uid(){return Math.random().toString(36).slice(2,9);}
+function ds(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(x<10?"0":"")+x;}
+function today(){return ds(new Date());}
+function parseD(s){var m=String(s).trim().match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{4}|\d{2})$/);if(!m)return "";var d=+m[1],mo=+m[2],y=+m[3];if(y<100)y+=2000;var dt=new Date(y,mo-1,d,12);if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d)return "";return ds(dt);}
+function dispD(iso){if(!iso)return "";var p=iso.split("-");return p[2]+"."+p[1]+"."+p[0];}
+function normDate(el,fb){var v=el.value.trim();if(!v)return;var p=parseD(v);if(p){el.value=dispD(p);}else{alert("Skriv datoen som dd.mm.åååå, for eksempel 24.10.2026.");el.value=fb?dispD(today()):"";}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function $(id){return document.getElementById(id);}
+function topic(id){return S.topics.filter(function(t){return t.id===id;})[0];}
+
+$("ld").value=dispD(today());$("pd").value=dispD(today());
+$("ld").addEventListener("change",function(){normDate(this,1);});
+$("pd").addEventListener("change",function(){normDate(this,1);});
+$("tdl").addEventListener("change",function(){normDate(this,0);});
+
+$("addT").onclick=function(){
+  var n=$("tn").value.trim();if(!n)return;
+  S.topics.push({id:uid(),name:n,color:$("tc").value,chapters:[],deadline:parseD($("tdl").value)||"",est:Math.round((parseFloat($("tes").value)||0)*60)});
+  $("tdl").value="";$("tes").value="";
+  $("tn").value="";save();render();
+};
+$("addL").onclick=function(){
+  var id=$("ls").value,m=parseInt($("lm").value,10),ch=$("lc").value,p=$("lp").value,date=$("ld").value.trim()?parseD($("ld").value):today();
+  if(!date){alert("Skriv datoen som dd.mm.åååå, for eksempel 24.10.2026.");return;}
+  if(!id||!m||m<1)return;
+  var t=topic(id);
+  S.logs.push({id:uid(),topicId:id,chapterId:ch||null,min:m,date:date});
+  if(ch&&p!==""){var c=chap(t,ch);if(c)setProg(c,parseInt(p,10),date);}
+  $("lm").value="";$("lp").value="";save();render();
+};
+$("ls").onchange=fillCh;
+["cm","cr","cf"].forEach(function(i){$(i).onchange=chart;});
+
+function render(){
+  var opts=S.topics.map(function(t){return '<option value="'+t.id+'">'+esc(t.name)+'</option>';}).join("");
+  var cur=$("ls").value;$("ls").innerHTML=opts||'<option value="">Legg til et tema først</option>';if(cur&&topic(cur))$("ls").value=cur;
+  var cf=$("cf").value;$("cf").innerHTML='<option value="all">Alle temaer</option>'+opts;if(cf&&(cf==="all"||topic(cf)))$("cf").value=cf;
+  fillCh();renderDays();renderTopics();chart();planChart();
+}
+
+function renderTopics(){
+  var el=$("topics");
+  if(!S.topics.length){el.innerHTML='<div class="empty">Ingen temaer ennå. Legg til ett ovenfor for å komme i gang.</div>';return;}
+  el.innerHTML=S.topics.map(function(t){
+    var tot=0,dn=0,mins=0;
+    t.chapters.forEach(function(c){tot+=c.value;dn+=c.value*c.prog/100;});
+    dn=Math.round(dn*10)/10;
+    S.logs.forEach(function(l){if(l.topicId===t.id)mins+=l.min;});
+    var pct=tot?Math.round(dn/tot*100):0;
+    var chs=t.chapters.map(function(c){
+      var cm=0;S.logs.forEach(function(l){if(l.chapterId===c.id)cm+=l.min;});
+      var st=c.prog>=100?'Ferdig':c.prog>0?(c.prog===50?'Halvveis':'Pågår'):'Ikke startet';
+      var da='data-t="'+t.id+'" data-c="'+c.id+'"';
+      return '<div class="chb'+(c.prog>=100?' done':'')+'"><div class="ch"><span class="cn">'+esc(c.name)+'</span>'+
+      '<input type="number" min="0" step="1" value="'+c.value+'" data-a="val" '+da+' aria-label="Verdi (poeng)"><span class="meta">poeng</span>'+
+      '<input type="number" min="0" step="0.5" value="'+(c.est?Math.round(c.est/6)/10:'')+'" data-a="ce" '+da+' placeholder="t" aria-label="Anslått tid i timer"><span class="meta">timer</span>'+
+      '<button class="g" data-a="delc" '+da+' aria-label="Slett kapittel">✕</button></div>'+
+      '<div class="ch"><input type="range" min="0" max="100" step="5" value="'+c.prog+'" data-a="prog" '+da+' aria-label="Fremdrift i kapittelet"><b class="pc">'+c.prog+' %</b>'+
+      '<button class="g" data-a="fin" '+da+'>Ferdig</button></div>'+
+      '<div class="meta">'+st+(cm?' · '+Math.floor(cm/60)+' t '+(cm%60)+' min brukt':'')+'</div></div>';
+    }).join("");
+    return '<div class="topic"><div class="th"><span class="dot" style="background:'+t.color+'"></span><b>'+esc(t.name)+'</b>'+
+    '<span class="meta">'+(Math.floor(mins/60))+' t '+(mins%60)+' min</span><span style="flex:1"></span>'+
+    '<button class="g" data-a="allfin" data-t="'+t.id+'">Alle kapitler ferdig</button><button class="g" data-a="delt" data-t="'+t.id+'">Slett tema</button></div>'+
+    '<div class="bar"><i style="width:'+pct+'%;background:'+t.color+'"></i></div>'+
+    '<div class="meta">'+dn+' av '+tot+' poeng fullført ('+pct+' %)</div>'+
+    '<div class="row" style="margin:8px 0"><label class="meta">Sluttdato <input type="text" inputmode="numeric" placeholder="dd.mm.åååå" style="width:120px" value="'+dispD(t.deadline||'')+'" data-a="dl" data-t="'+t.id+'"></label>'+
+    '<label class="meta">Anslått tid (t) <input type="number" min="0" step="0.5" style="width:90px" value="'+(t.est?Math.round(t.est/6)/10:'')+'" data-a="te" data-t="'+t.id+'" placeholder="valgfritt"></label>'+
+    '<button data-a="adj" data-m="-60" data-t="'+t.id+'" aria-label="Minus 1 time">−1 t</button><button data-a="adj" data-m="-30" data-t="'+t.id+'" aria-label="Minus 30 minutter">−30 min</button><button data-a="adj" data-m="30" data-t="'+t.id+'" aria-label="Pluss 30 minutter">+30 min</button><button data-a="adj" data-m="60" data-t="'+t.id+'" aria-label="Pluss 1 time">+1 t</button></div>'+
+    '<div class="plan">'+planText(t)+'</div>'+paceHtml(t)+
+    chs+
+    '<div class="row" style="margin-top:8px"><input placeholder="Nytt kapittel" id="cn-'+t.id+'" aria-label="Kapittelnavn">'+
+    '<input type="number" min="0" value="10" id="cv-'+t.id+'" aria-label="Poeng" title="Poeng"><input type="number" min="0" step="0.5" id="cve-'+t.id+'" placeholder="timer" aria-label="Anslått tid i timer" title="Anslått tid i timer"><button data-a="addc" data-t="'+t.id+'">Legg til kapittel</button></div></div>';
+  }).join("");
+}
+
+$("topics").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var a=b.dataset.a,t=topic(b.dataset.t);if(!t)return;
+  if(a==="addc"){
+    var n=$("cn-"+t.id).value.trim();if(!n)return;
+    var v=parseFloat($("cv-"+t.id).value);if(isNaN(v)||v<0)v=0;
+    t.chapters.push({id:uid(),name:n,value:v,done:false,doneDate:null,prog:0,hist:[],est:Math.round((parseFloat($("cve-"+t.id).value)||0)*60)});
+  }else if(a==="delc"){
+    t.chapters=t.chapters.filter(function(c){return c.id!==b.dataset.c;});
+  }else if(a==="delt"){
+    if(!confirm("Slette «"+t.name+"» med alle kapitler og logget tid?"))return;
+    S.topics=S.topics.filter(function(x){return x.id!==t.id;});
+    S.logs=S.logs.filter(function(l){return l.topicId!==t.id;});
+  }else if(a==="fin"){var fc=chap(t,b.dataset.c);if(fc)setProg(fc,100,pdate());
+  }else if(a==="allfin"){t.chapters.forEach(function(c){if(c.prog<100)setProg(c,100,pdate());});
+  }else if(a==="adj"){t.est=Math.max(0,(t.est||0)+parseInt(b.dataset.m,10));
+  }else if(a==="pace"){var pe=paceEst(t);if(pe)t.est=Math.round(pe.total/5)*5;
+  }else return;
+  save();render();
+});
+$("topics").addEventListener("change",function(e){
+  var el=e.target,a=el.dataset.a;if(!a)return;
+  var t=topic(el.dataset.t);if(!t)return;
+  if(a==="dl"){var dv=el.value.trim();if(dv&&!parseD(dv)){alert("Skriv datoen som dd.mm.åååå, for eksempel 24.10.2026.");render();return;}t.deadline=dv?parseD(dv):"";save();render();return;}
+  if(a==="te"){var th=parseFloat(el.value);t.est=isNaN(th)||th<0?0:Math.round(th*60);save();render();return;}
+  var c=t.chapters.filter(function(x){return x.id===el.dataset.c;})[0];if(!c)return;
+  if(a==="prog"){setProg(c,parseInt(el.value,10),pdate());}
+  else if(a==="val"){var v=parseFloat(el.value);c.value=isNaN(v)||v<0?0:v;}
+  else if(a==="ce"){var ch=parseFloat(el.value);c.est=isNaN(ch)||ch<0?0:Math.round(ch*60);}
+  save();render();
+});
+
+function buckets(r){
+  var out=[],now=new Date();now.setHours(12,0,0,0);
+  if(r[0]==="d"){
+    var n=parseInt(r.slice(1),10);
+    for(var i=n-1;i>=0;i--){var d=new Date(now);d.setDate(d.getDate()-i);
+      out.push({from:ds(d),to:ds(d),label:d.getDate()+"."+(d.getMonth()+1)+"."});}
+  }else{
+    var mon=new Date(now);mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+    for(var j=7;j>=0;j--){var s=new Date(mon);s.setDate(s.getDate()-j*7);var e=new Date(s);e.setDate(e.getDate()+6);
+      out.push({from:ds(s),to:ds(e),label:"Uke "+isoWeek(s)});}
+  }
+  return out;
+}
+function isoWeek(d){var t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));var n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);
+  var y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7);}
+
+function chart(){
+  var m=$("cm").value,bk=buckets($("cr").value),f=$("cf").value;
+  var ts=S.topics.filter(function(t){return f==="all"||t.id===f;});
+  if(!ts.length){$("chart").innerHTML='<div class="empty">Ingen data å vise ennå.</div>';$("legend").innerHTML="";return;}
+  bk.forEach(function(b){
+    b.parts=ts.map(function(t){
+      var v=0;
+      if(m==="time"){S.logs.forEach(function(l){if(l.topicId===t.id&&l.date>=b.from&&l.date<=b.to)v+=l.min/60;});}
+      else{t.chapters.forEach(function(c){var pv=0;c.hist.forEach(function(h){var d=h.pct-pv;pv=h.pct;if(d>0&&h.date>=b.from&&h.date<=b.to)v+=d/100*c.value;});});}
+      return{t:t,v:v};
+    });
+    b.total=b.parts.reduce(function(a,p){return a+p.v;},0);
+  });
+  var max=Math.max.apply(null,bk.map(function(b){return b.total;}).concat([m==="time"?1:10]));
+  var step=niceStep(max/4);max=Math.ceil(max/step)*step;
+  var W=Math.max(560,bk.length*56+60),H=280,L=44,B=34,T=14,ph=H-B-T,bw=(W-L-10)/bk.length;
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Stolpediagram">';
+  for(var v=0;v<=max+1e-9;v+=step){
+    var y=T+ph-v/max*ph;
+    s+='<line x1="'+L+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".12"/><text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end">'+(Math.round(v*10)/10)+'</text>';
+  }
+  bk.forEach(function(b,i){
+    var x=L+i*bw+bw*.18,w=bw*.64,yy=T+ph;
+    b.parts.forEach(function(p){
+      if(p.v<=0)return;var h=p.v/max*ph;yy-=h;
+      s+='<rect x="'+x+'" y="'+yy+'" width="'+w+'" height="'+h+'" rx="2" fill="'+p.t.color+'"><title>'+esc(p.t.name)+': '+(Math.round(p.v*10)/10)+(m==="time"?' t':' poeng')+'</title></rect>';
+    });
+    if(b.total>0)s+='<text x="'+(x+w/2)+'" y="'+(yy-4)+'" text-anchor="middle">'+(Math.round(b.total*10)/10)+'</text>';
+    s+='<text x="'+(x+w/2)+'" y="'+(H-12)+'" text-anchor="middle">'+b.label+'</text>';
+  });
+  s+='</svg>';
+  $("chart").innerHTML=s;
+  $("legend").innerHTML=ts.map(function(t){return '<span><i class="dot" style="background:'+t.color+'"></i>'+esc(t.name)+'</span>';}).join("");
+}
+function niceStep(x){if(x<=0)return 1;var p=Math.pow(10,Math.floor(Math.log10(x))),n=x/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
+
+function remMin(t){
+  var ce=0,any=false,tot=0,dn=0;
+  t.chapters.forEach(function(c){tot+=c.value;dn+=c.value*c.prog/100;if(c.est){any=true;ce+=c.est*(1-c.prog/100);}});
+  if(t.est)return t.est*(tot?1-dn/tot:1);
+  if(any)return ce;
+  return 0;
+}
+function hasEst(t){return !!t.est||t.chapters.some(function(c){return c.est;});}
+function paceEst(t){var m=0,tot=0,dn=0;S.logs.forEach(function(l){if(l.topicId===t.id)m+=l.min;});t.chapters.forEach(function(c){tot+=c.value;dn+=c.value*c.prog/100;});var f=tot?dn/tot:0;return(f>=0.1&&m>0)?{total:m/f,used:m,pct:Math.round(f*100)}:null;}
+function paceHtml(t){var p=paceEst(t);if(!p)return "";return '<div class="plan">Etter tempoet ditt ('+fmt(p.used)+' brukt på '+p.pct+' %) tar temaet ca. '+fmt(p.total)+' totalt. <button data-a="pace" data-t="'+t.id+'">Bruk som anslag</button></div>';}
+function sdays(dl){var out=[],d=new Date();d.setHours(12,0,0,0);var e=new Date(dl+"T12:00:00");
+  for(var i=0;i<400&&d<=e;i++){if((S.cap[d.getDay()]||0)>0)out.push(ds(d));d.setDate(d.getDate()+1);}return out;}
+function fmt(m){m=Math.round(m);var h=Math.floor(m/60),mm=m%60;return h?(h+" t"+(mm?" "+mm+" min":"")):(mm+" min");}
+function fmtDate(s){return dispD(s);}
+function dowOf(iso){return new Date(iso+"T12:00:00").getDay();}
+function planText(t){
+  if(!t.deadline&&!hasEst(t))return "Sett sluttdato og anslått tid for å få en plan per dag.";
+  if(!hasEst(t))return "Legg inn anslått tid for å se hva som må gjøres per dag.";
+  var rem=remMin(t),s="Gjenstår: ca. "+fmt(rem)+".";
+  if(rem<=0)return "Ingenting gjenstår av anslått tid.";
+  if(!t.deadline)return s+" Sett en sluttdato for å få en plan per dag.";
+  if(t.deadline<today())return s+" Sluttdatoen "+fmtDate(t.deadline)+" har passert.";
+  var n=sdays(t.deadline).length;
+  if(!n)return s+" Ingen studiedager før "+fmtDate(t.deadline)+". Velg flere dager under «Plan fremover».";
+  return s+" "+n+" studiedag"+(n>1?"er":"")+" til "+fmtDate(t.deadline)+": i snitt ca. "+fmt(rem/n)+" per studiedag.";
+}
+function renderDays(){
+  var nm=["Man","Tir","Ons","Tor","Fre","Lør","Søn"],ix=[1,2,3,4,5,6,0];
+  $("dayrow").innerHTML=ix.map(function(d,i){return '<label class="day"><span>'+nm[i]+'</span><input type="number" min="0" max="24" step="0.5" value="'+(S.cap[d]||0)+'" data-d="'+d+'" style="width:64px" aria-label="Timer på '+nm[i]+'"><span class="meta">t</span></label>';}).join("");
+}
+$("dayrow").addEventListener("change",function(e){
+  var d=parseInt(e.target.dataset.d,10);if(isNaN(d))return;
+  var h=parseFloat(e.target.value);S.cap[d]=isNaN(h)||h<0?0:Math.min(24,h);
+  save();renderTopics();planChart();
+});
+function planChart(){
+  var el=$("planchart"),ts=S.topics.filter(function(t){return t.deadline&&t.deadline>=today()&&remMin(t)>0;});
+  if(!ts.length){el.innerHTML='<div class="empty">Legg inn sluttdato og anslått tid på minst ett tema for å se planen.</div>';$("planleg").innerHTML="";return;}
+  var maxd=ts.reduce(function(a,t){return t.deadline>a?t.deadline:a;},"");
+  var bk=[],d=new Date();d.setHours(12,0,0,0);var e=new Date(maxd+"T12:00:00");
+  for(var i=0;i<42&&d<=e;i++){bk.push({date:ds(d),dow:d.getDay(),label:d.getDate()+"."+(d.getMonth()+1)+".",parts:[]});d.setDate(d.getDate()+1);}
+  ts.forEach(function(t){var sd=sdays(t.deadline),r=remMin(t),W=0;sd.forEach(function(x){W+=S.cap[dowOf(x)];});
+    bk.forEach(function(b){b.parts.push({t:t,v:(W&&sd.indexOf(b.date)>-1)?r*S.cap[b.dow]/W/60:0});});});
+  var wd=["Søn","Man","Tir","Ons","Tor","Fre","Lør"];
+  bk.forEach(function(b){b.total=b.parts.reduce(function(a,p){return a+p.v;},0);});
+  var mx=Math.max.apply(null,bk.map(function(b){return Math.max(b.total,S.cap[b.dow]||0);}).concat([1])),step=niceStep(mx/4);mx=Math.ceil(mx/step)*step;
+  var W=Math.max(560,bk.length*46+60),H=300,L=44,B=46,T=20,ph=H-B-T,bw=(W-L-10)/bk.length;
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Plan per dag">';
+  for(var v=0;v<=mx+1e-9;v+=step){var y=T+ph-v/mx*ph;
+    s+='<line x1="'+L+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="currentColor" opacity=".12"/><text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end">'+(Math.round(v*10)/10)+' t</text>';}
+  bk.forEach(function(b,i){
+    var x=L+i*bw+bw*.15,w=bw*.7,cx=x+w/2,yy=T+ph;
+    b.parts.forEach(function(p){if(p.v<=0)return;var h=p.v/mx*ph;yy-=h;
+      s+='<rect x="'+x+'" y="'+yy+'" width="'+w+'" height="'+h+'" rx="2" fill="'+p.t.color+'"><title>'+esc(p.t.name)+': '+fmt(p.v*60)+'</title></rect>';});
+    var cp=S.cap[b.dow]||0;
+    if(cp>0){var cy=T+ph-cp/mx*ph;s+='<line x1="'+(x-3)+'" x2="'+(x+w+3)+'" y1="'+cy+'" y2="'+cy+'" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3" opacity=".55"><title>Satt av: '+fmt(cp*60)+'</title></line>';}
+    if(b.total>0)s+='<text x="'+cx+'" y="'+(yy-4)+'" text-anchor="middle">'+(b.total).toFixed(1).replace(".",",")+' t'+(b.total>cp+0.05?' !':'')+'</text>';
+    s+='<text x="'+cx+'" y="'+(H-26)+'" text-anchor="middle">'+wd[b.dow]+'</text><text x="'+cx+'" y="'+(H-12)+'" text-anchor="middle">'+b.label+'</text>';
+    var k=0;ts.forEach(function(t){if(t.deadline===b.date){var px=cx-5+k*12;s+='<polygon points="'+px+',4 '+(px+10)+',4 '+(px+5)+',14" fill="'+t.color+'"><title>Sluttdato: '+esc(t.name)+'</title></polygon>';k++;}});
+  });
+  s+='</svg>';el.innerHTML=s;
+  $("planleg").innerHTML=ts.map(function(t){return '<span><i class="dot" style="background:'+t.color+'"></i>'+esc(t.name)+'</span>';}).join("")+'<span class="meta">▼ markerer sluttdato</span><span class="meta">Stiplet strek = tid du har satt av den dagen</span>'+(function(){var o=bk.filter(function(b){return b.total>(S.cap[b.dow]||0)+0.05;}).length;return o?'<span class="plan">Du har ikke satt av nok tid på '+o+(o>1?' dager':' dag')+' (merket med !). Øk timene, eller flytt sluttdatoen.</span>':'';})();
+}
+
+function bmsg(t){$("bm").textContent=t;}
+$("exp").onclick=function(){
+  var txt=JSON.stringify(S),ta=$("bt");
+  ta.value=txt;ta.focus();ta.select();
+  var ok=false;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){bmsg("Kopiert. Lim inn i en notatfil.");},function(){bmsg("Marker teksten og kopier manuelt.");});return;}ok=document.execCommand("copy");}catch(e){}
+  bmsg(ok?"Kopiert. Lim inn i en notatfil.":"Marker teksten og kopier manuelt.");
+};
+$("imp").onclick=function(){
+  var d;
+  try{d=JSON.parse($("bt").value.trim());}catch(e){bmsg("Teksten er ikke gyldig data.");return;}
+  if(!d||!Array.isArray(d.topics)||!Array.isArray(d.logs)){bmsg("Teksten er ikke gyldig data.");return;}
+  if(S.topics.length&&!confirm("Dette erstatter dataene som ligger her nå. Fortsette?"))return;
+  d.topics.forEach(function(t){t.chapters=Array.isArray(t.chapters)?t.chapters:[];t.chapters.forEach(mig);});
+  S={topics:d.topics,logs:d.logs,cap:capFrom(d)};save();render();$("bt").value="";bmsg("Data lastet inn.");
+};
+
+render();
+</script>
+</body>
+</html>
